@@ -1,0 +1,98 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>DevisFacture Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              // Map Tailwind colors to CSS variables defined in ThemeContext
+              blue: {
+                50: 'rgb(var(--primary-50) / <alpha-value>)',
+                100: 'rgb(var(--primary-100) / <alpha-value>)',
+                200: 'rgb(var(--primary-200) / <alpha-value>)',
+                300: 'rgb(var(--primary-300) / <alpha-value>)',
+                400: 'rgb(var(--primary-400) / <alpha-value>)',
+                500: 'rgb(var(--primary-500) / <alpha-value>)',
+                600: 'rgb(var(--primary-600) / <alpha-value>)',
+                700: 'rgb(var(--primary-700) / <alpha-value>)',
+                800: 'rgb(var(--primary-800) / <alpha-value>)',
+                900: 'rgb(var(--primary-900) / <alpha-value>)',
+                950: 'rgb(var(--primary-950) / <alpha-value>)',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      @media print {
+        .no-print { display: none !important; }
+        .print-only { display: block !important; }
+        body { background: white; margin: 0; padding: 0; }
+        @page { margin: 0; size: auto; }
+        /* Ensure the preview container takes full width when printing */
+        #preview-container {
+           margin: 0 !important;
+           box-shadow: none !important;
+           width: 100% !important;
+           max-width: none !important;
+           padding: 10mm !important; 
+        }
+      }
+      .print-only { display: none; }
+      
+      /* Mobile specific adjustments */
+      input, select, textarea, button {
+        touch-action: manipulation;
+      }
+
+      /* Prevent iOS zoom on inputs */
+      @media screen and (max-width: 768px) {
+        input, select, textarea {
+          font-size: 16px !important;
+        }
+      }
+
+      /* Hide scrollbar for Chrome, Safari and Opera */
+      .no-scrollbar::-webkit-scrollbar {
+          display: none;
+      }
+      /* Hide scrollbar for IE, Edge and Firefox */
+      .no-scrollbar {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
+      }
+      
+      /* Base transitions for dark mode */
+      body {
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.10.1",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "@google/genai": "https://esm.sh/@google/genai@^1.33.0"
+  }
+}
+</script>
+</head>
+  <body class="bg-slate-50 text-slate-900 antialiased pb-20 md:pb-0 dark:bg-slate-950 dark:text-slate-100">
+    <div id="root"></div>
+  </body>
+</html>

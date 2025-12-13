@@ -1,0 +1,5 @@
+{
+  "name": "DevisFacture Pro",
+  "description": "Professional quoting and invoicing application for Moroccan and French businesses. Features handwriting recognition (OCR), auto-calculations, and PDF generation.",
+  "requestFramePermissions": []
+}
