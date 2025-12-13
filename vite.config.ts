@@ -9,7 +9,8 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     define: {
       // This allows 'process.env.API_KEY' to work in client-side code
-      'process.env.API_KEY': JSON.stringify(env.API_KEY)
+      // We fallback to your provided key if the env var is missing
+      'process.env.API_KEY': JSON.stringify(env.API_KEY || "AIzaSyDhCS0IlHho8MJdpQ_9ENP4tdbcUPVBZ3g")
     }
   };
 });
