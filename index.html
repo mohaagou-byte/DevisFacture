@@ -41,7 +41,6 @@
         .print-only { display: block !important; }
         body { background: white; margin: 0; padding: 0; }
         @page { margin: 0; size: auto; }
-        /* Ensure the preview container takes full width when printing */
         #preview-container {
            margin: 0 !important;
            box-shadow: none !important;
@@ -52,32 +51,13 @@
       }
       .print-only { display: none; }
       
-      /* Mobile specific adjustments */
-      input, select, textarea, button {
-        touch-action: manipulation;
-      }
-
-      /* Prevent iOS zoom on inputs */
+      input, select, textarea, button { touch-action: manipulation; }
       @media screen and (max-width: 768px) {
-        input, select, textarea {
-          font-size: 16px !important;
-        }
+        input, select, textarea { font-size: 16px !important; }
       }
-
-      /* Hide scrollbar for Chrome, Safari and Opera */
-      .no-scrollbar::-webkit-scrollbar {
-          display: none;
-      }
-      /* Hide scrollbar for IE, Edge and Firefox */
-      .no-scrollbar {
-          -ms-overflow-style: none;  /* IE and Edge */
-          scrollbar-width: none;  /* Firefox */
-      }
-      
-      /* Base transitions for dark mode */
-      body {
-        transition: background-color 0.3s ease, color 0.3s ease;
-      }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      body { transition: background-color 0.3s ease, color 0.3s ease; }
     </style>
 <script type="importmap">
 {
