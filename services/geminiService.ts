@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { DocumentData, DocType, DocStatus, CompanyProfile } from '../types';
 
@@ -62,10 +61,12 @@ export const analyzeCompanyDocument = async (base64Image: string): Promise<Parti
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: [
-        { inlineData: { mimeType: "image/jpeg", data: cleanBase64 } },
-        { text: prompt }
-      ],
+      contents: {
+        parts: [
+          { inlineData: { mimeType: "image/jpeg", data: cleanBase64 } },
+          { text: prompt }
+        ]
+      },
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -141,15 +142,17 @@ export const analyzeDocumentImage = async (base64Image: string): Promise<Partial
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: [
-        {
-          inlineData: {
-            mimeType: "image/jpeg",
-            data: cleanBase64
-          }
-        },
-        { text: prompt }
-      ],
+      contents: {
+        parts: [
+          {
+            inlineData: {
+              mimeType: "image/jpeg",
+              data: cleanBase64
+            }
+          },
+          { text: prompt }
+        ]
+      },
       config: {
         responseMimeType: "application/json",
         responseSchema: {

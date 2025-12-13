@@ -14,7 +14,9 @@ export const INITIAL_PROFILE: CompanyProfile = {
   rc: "12345",
   if_tax: "9876543",
   bankName: "Attijariwafa Bank",
-  rib: "123 456 7890000000000000 00"
+  rib: "123 456 7890000000000000 00",
+  docNumberFormat: 'seq-mmyy',
+  docNumberPrefix: ''
 };
 
 export const INITIAL_DOCUMENT: DocumentData = {

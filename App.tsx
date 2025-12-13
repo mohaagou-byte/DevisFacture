@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Link, useNavigate, useParams, useLocation, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
@@ -10,34 +9,83 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { INITIAL_DOCUMENT, INITIAL_PROFILE } from './constants';
 import { StorageService } from './services/storageService';
-import { analyzeDocumentImage, analyzeCompanyDocument } from './services/geminiService';
-import { DocumentData, DocStatus, CompanyProfile } from './types';
+import { analyzeDocumentImage, analyzeCompanyDocument, compressImage } from './services/geminiService';
+import { DocumentData, DocStatus, CompanyProfile, DocNumberFormat, DocType } from './types';
 
 // Helper to calculate next number based on existing documents
-const getNextDocumentNumber = (docs: DocumentData[]) => {
+const getNextDocumentNumber = (docs: DocumentData[], format: DocNumberFormat = 'seq-mmyy', prefix: string = '') => {
   const now = new Date();
+  const yearFull = now.getFullYear();
+  const yearShort = yearFull.toString().slice(-2);
   const month = (now.getMonth() + 1).toString().padStart(2, '0');
-  const year = now.getFullYear().toString().slice(-2);
-  const dateSuffix = `${month}${year}`; // e.g., 1225
   
-  // Regex to match format: sequence-MMYY (e.g., 1-1225, 10-1225)
-  const regex = new RegExp(`^(\\d+)-${dateSuffix}$`);
+  let regex: RegExp;
+  
+  // Determine regex based on format
+  switch (format) {
+    case 'seq/yyyy':
+       // Format: 1/2025
+       regex = new RegExp(`^(\\d+)\/${yearFull}$`);
+       break;
+    case 'yyyy-seq':
+       // Format: 2025-001
+       regex = new RegExp(`^${yearFull}-(\\d+)$`);
+       break;
+    case 'seq':
+       // Format: 0001
+       regex = /^(\d+)$/;
+       break;
+    case 'seq-mmyy':
+    default:
+       // Format: 1-1225
+       regex = new RegExp(`^(\\d+)-${month}${yearShort}$`);
+       break;
+  }
   
   let maxSequence = 0;
   
   docs.forEach(d => {
     if (d.number) {
-      const match = d.number.match(regex);
-      if (match) {
-        const seq = parseInt(match[1], 10);
-        if (!isNaN(seq) && seq > maxSequence) {
-          maxSequence = seq;
-        }
-      }
+       let num = d.number;
+       
+       // Handle prefix stripping
+       if (prefix && num.startsWith(prefix)) {
+           num = num.substring(prefix.length);
+       } else if (prefix && !num.startsWith(prefix)) {
+           // If it doesn't match prefix, we treat it as not belonging to this sequence (optional strictness)
+           return; 
+       }
+       
+       const match = num.match(regex);
+       if (match) {
+         const seq = parseInt(match[1], 10);
+         if (!isNaN(seq) && seq > maxSequence) {
+           maxSequence = seq;
+         }
+       }
     }
   });
+
+  const nextSeq = maxSequence + 1;
+  let result = '';
+
+  switch (format) {
+    case 'seq/yyyy':
+       result = `${nextSeq}/${yearFull}`;
+       break;
+    case 'yyyy-seq':
+       result = `${yearFull}-${nextSeq.toString().padStart(3, '0')}`;
+       break;
+    case 'seq':
+       result = nextSeq.toString().padStart(4, '0');
+       break;
+    case 'seq-mmyy':
+    default:
+       result = `${nextSeq}-${month}${yearShort}`;
+       break;
+  }
   
-  return `${maxSequence + 1}-${dateSuffix}`;
+  return (prefix || '') + result;
 };
 
 // --- Protected Route Wrapper ---
@@ -176,7 +224,8 @@ const NewDocument = () => {
 
   const handleManualCreate = () => {
     const allDocs = StorageService.getDocuments();
-    const nextNumber = getNextDocumentNumber(allDocs);
+    const profile = StorageService.getProfile();
+    const nextNumber = getNextDocumentNumber(allDocs, profile.docNumberFormat, profile.docNumberPrefix);
 
     const newDoc = { 
       ...INITIAL_DOCUMENT, 
@@ -203,9 +252,15 @@ const NewDocument = () => {
           const base64 = reader.result as string;
           const analyzedData = await analyzeDocumentImage(base64);
           
+          // Generate number for analyzed doc too
+          const allDocs = StorageService.getDocuments();
+          const profile = StorageService.getProfile();
+          const nextNumber = getNextDocumentNumber(allDocs, profile.docNumberFormat, profile.docNumberPrefix);
+
           const newDoc: DocumentData = {
             ...INITIAL_DOCUMENT,
             ...analyzedData,
+            number: analyzedData.number || nextNumber, // Use analyzed number if found, else next sequential
             id: Date.now().toString()
           };
           
@@ -252,13 +307,11 @@ const NewDocument = () => {
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
              )}
           </div>
-          <h3 className="text-lg font-bold text-slate-800 dark:text-white">Scanner une photo (IA)</h3>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-2">Prenez une photo d'un devis manuscrit, notre IA extraira les données.</p>
+          <h3 className="text-lg font-bold text-slate-800 dark:text-white">Scanner ou Importer (IA)</h3>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-2">Prenez une photo ou importez une image de la galerie, notre IA extraira les données.</p>
           <input 
             type="file" 
             accept="image/*"
-            // Adding capture="environment" to prefer rear camera on mobile
-            capture="environment"
             onChange={handleFileUpload} 
             disabled={isUploading}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -365,14 +418,16 @@ const ProfilePage = () => {
   const [profile, setProfile] = useState<CompanyProfile>(INITIAL_PROFILE);
   const [saved, setSaved] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [docs, setDocs] = useState<DocumentData[]>([]);
+  
   const { user } = useAuth();
   const { mode, toggleMode, primaryColor, setPrimaryColor } = useTheme();
 
   useEffect(() => {
-    // If we wanted to, we could pre-fill email/name from the User object
     let p = StorageService.getProfile();
     if (!p.email && user?.email) p.email = user.email;
     setProfile(p);
+    setDocs(StorageService.getDocuments());
   }, [user]);
 
   const handleSave = () => {
@@ -407,7 +462,6 @@ const ProfilePage = () => {
         try {
           const base64 = reader.result as string;
           const analyzed = await analyzeCompanyDocument(base64);
-          // Merge with existing profile, preferring analyzed data if present
           setProfile(prev => ({
             ...prev,
             name: analyzed.name || prev.name,
@@ -443,6 +497,8 @@ const ProfilePage = () => {
     { name: 'Nuit', value: '#7c3aed' },
     { name: 'Ardoise', value: '#475569' },
   ];
+
+  const nextNumPreview = getNextDocumentNumber(docs, profile.docNumberFormat, profile.docNumberPrefix);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -491,6 +547,39 @@ const ProfilePage = () => {
                    </div>
                 </div>
              </div>
+          </div>
+       </div>
+
+       {/* Numbering Settings */}
+       <div className="bg-white dark:bg-slate-800 p-6 md:p-8 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+          <h3 className="font-semibold text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-700 pb-2 mb-4">Numérotation des documents</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-3">Format</label>
+                <select 
+                  value={profile.docNumberFormat || 'seq-mmyy'}
+                  onChange={(e) => setProfile({...profile, docNumberFormat: e.target.value as any})}
+                  className="w-full border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                >
+                  <option value="seq-mmyy">Séquentiel-MoisAnnée (Ex: 1-1225)</option>
+                  <option value="seq/yyyy">Séquentiel/Année (Ex: 1/2025)</option>
+                  <option value="yyyy-seq">Année-Séquentiel (Ex: 2025-001)</option>
+                  <option value="seq">Simple (Ex: 0001)</option>
+                </select>
+              </div>
+               <div>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-3">Préfixe (Optionnel)</label>
+                <input 
+                  type="text" 
+                  value={profile.docNumberPrefix || ''}
+                  onChange={(e) => setProfile({...profile, docNumberPrefix: e.target.value})}
+                  placeholder="Ex: FACT-"
+                  className="w-full border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+          </div>
+          <div className="mt-4 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg text-sm text-slate-600 dark:text-slate-400">
+             Aperçu du prochain numéro : <strong className="text-blue-600 dark:text-blue-400 font-mono text-base ml-2">{nextNumPreview}</strong>
           </div>
        </div>
 

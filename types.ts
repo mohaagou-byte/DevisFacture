@@ -13,6 +13,8 @@ export enum DocStatus {
 
 export type TemplateType = 'classic' | 'minimal' | 'modern';
 
+export type DocNumberFormat = 'seq-mmyy' | 'seq/yyyy' | 'yyyy-seq' | 'seq';
+
 export interface User {
   id: string;
   name: string;
@@ -34,6 +36,8 @@ export interface CompanyProfile {
   bankName?: string;
   rib?: string;
   logoUrl?: string;
+  docNumberFormat?: DocNumberFormat;
+  docNumberPrefix?: string;
 }
 
 export interface Payment {
