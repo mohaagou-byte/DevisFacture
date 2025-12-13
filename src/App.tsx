@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useParams, useLocation, Link } from 'react-router-dom';
+import { HashRouter, Routes, Route, Link, useNavigate, useParams, useLocation, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { DocumentEditor, DocumentPreview } from './components/DocumentEditor';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { Login, Register } from './components/Auth';
 import { ClientsList, ClientForm, ClientDetails } from './components/Clients';
 import { SuppliersList, SupplierForm } from './components/Suppliers';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { INITIAL_DOCUMENT, INITIAL_PROFILE } from './constants';
 import { StorageService } from './services/storageService';
 import { analyzeDocumentImage, analyzeCompanyDocument, compressImage } from './services/geminiService';
-import { INITIAL_DOCUMENT, INITIAL_PROFILE } from './constants';
-import { DocumentData, DocType, DocStatus, CompanyProfile } from './types';
+import { DocumentData, DocStatus, CompanyProfile, DocNumberFormat, DocType } from './types';
 
 // Helper function to generate document numbers
 const getNextDocumentNumber = (docs: DocumentData[], format: string = 'seq-mmyy', prefix: string = ''): string => {
@@ -94,36 +94,36 @@ const NewDocument = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 py-4 md:py-10 px-4">
+    <div className="max-w-5xl mx-auto space-y-8 py-4 md:py-10 px-4">
       <div className="text-center space-y-2">
         <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">Nouveau Document</h2>
-        <p className="text-slate-600 dark:text-slate-400">Comment souhaitez-vous créer votre devis/facture ?</p>
+        <p className="text-slate-600 dark:text-slate-400">Sélectionnez une méthode de création</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Manual Option */}
         <button 
           onClick={handleManualCreate}
-          className="group relative bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border-2 border-slate-100 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-md transition-all text-left flex flex-col items-center text-center h-full"
+          className="group relative bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-sm border-2 border-slate-100 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-md transition-all text-center flex flex-col items-center justify-center h-64"
         >
-          <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+          <div className="w-20 h-20 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+             <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
           </div>
-          <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">Manuellement</h3>
-          <p className="text-slate-500 dark:text-slate-400 text-sm">Remplir une grille vierge à partir de zéro.</p>
+          <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Manuellement</h3>
+          <p className="text-slate-500 dark:text-slate-400 text-sm px-4">Remplir une grille vierge à partir de zéro.</p>
         </button>
 
         {/* Camera Option */}
-        <div className="group relative bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border-2 border-slate-100 dark:border-slate-700 hover:border-indigo-500 dark:hover:border-indigo-500 hover:shadow-md transition-all text-left cursor-pointer flex flex-col items-center text-center h-full">
-          <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+        <div className="group relative bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-sm border-2 border-slate-100 dark:border-slate-700 hover:border-indigo-500 dark:hover:border-indigo-500 hover:shadow-md transition-all text-center flex flex-col items-center justify-center h-64 cursor-pointer">
+          <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
              {isUploading ? (
-                <svg className="animate-spin w-8 h-8" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                <svg className="animate-spin w-10 h-10" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
              ) : (
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
              )}
           </div>
-          <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">Scanner (Caméra)</h3>
-          <p className="text-slate-500 dark:text-slate-400 text-sm">Prenez une photo de votre devis papier.</p>
+          <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Scanner (Caméra)</h3>
+          <p className="text-slate-500 dark:text-slate-400 text-sm px-4">Prenez une photo de votre devis papier.</p>
           <input 
             type="file" 
             accept="image/*"
@@ -135,16 +135,16 @@ const NewDocument = () => {
         </div>
 
         {/* Gallery Option */}
-        <div className="group relative bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border-2 border-slate-100 dark:border-slate-700 hover:border-purple-500 dark:hover:border-purple-500 hover:shadow-md transition-all text-left cursor-pointer flex flex-col items-center text-center h-full">
-          <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+        <div className="group relative bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-sm border-2 border-slate-100 dark:border-slate-700 hover:border-emerald-500 dark:hover:border-emerald-500 hover:shadow-md transition-all text-center flex flex-col items-center justify-center h-64 cursor-pointer">
+          <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
              {isUploading ? (
-                <svg className="animate-spin w-8 h-8" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                <svg className="animate-spin w-10 h-10" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
              ) : (
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
              )}
           </div>
-          <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">Importer (Galerie)</h3>
-          <p className="text-slate-500 dark:text-slate-400 text-sm">Choisissez une image existante.</p>
+          <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Importer Image</h3>
+          <p className="text-slate-500 dark:text-slate-400 text-sm px-4">Choisissez une image depuis votre galerie.</p>
           <input 
             type="file" 
             accept="image/*"
@@ -157,8 +157,9 @@ const NewDocument = () => {
       </div>
       
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-4 rounded-lg border border-red-200 dark:border-red-800">
-          <strong>Erreur:</strong> {error}
+        <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-4 rounded-lg border border-red-200 dark:border-red-800 flex items-center justify-center gap-2">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          {error}
         </div>
       )}
     </div>
@@ -649,7 +650,7 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <Router>
+        <HashRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -671,7 +672,7 @@ function App() {
             
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           </Routes>
-        </Router>
+        </HashRouter>
       </AuthProvider>
     </ThemeProvider>
   );
