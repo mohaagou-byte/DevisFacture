@@ -110,7 +110,7 @@ const NewDocument = () => {
              <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
           </div>
           <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Manuellement</h3>
-          <p className="text-slate-500 dark:text-slate-400 text-sm px-4">Remplir une grille vierge à partir de zéro.</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm px-4">Remplir une grille vierge.</p>
         </button>
 
         {/* Camera Option */}
@@ -122,8 +122,8 @@ const NewDocument = () => {
                 <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
              )}
           </div>
-          <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Scanner (Caméra)</h3>
-          <p className="text-slate-500 dark:text-slate-400 text-sm px-4">Prenez une photo de votre devis papier.</p>
+          <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Prendre une photo</h3>
+          <p className="text-slate-500 dark:text-slate-400 text-sm px-4">Scanner via la caméra.</p>
           <input 
             type="file" 
             accept="image/*"
@@ -143,8 +143,8 @@ const NewDocument = () => {
                 <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
              )}
           </div>
-          <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Importer Image</h3>
-          <p className="text-slate-500 dark:text-slate-400 text-sm px-4">Choisissez une image depuis votre galerie.</p>
+          <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Importer une image</h3>
+          <p className="text-slate-500 dark:text-slate-400 text-sm px-4">Depuis la galerie.</p>
           <input 
             type="file" 
             accept="image/*"
@@ -559,37 +559,123 @@ const Input = ({ label, value, onChange, type = 'text' }: any) => (
 const Dashboard = () => {
   const [docs, setDocs] = useState<DocumentData[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [sortField, setSortField] = useState<'date' | 'amount'>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  
+  // Confirmation Modal State
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
      setDocs(StorageService.getDocuments());
   }, []);
   
-  const handleDelete = (id: string, e: React.MouseEvent) => {
+  const requestDelete = (id: string, e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      if(confirm('Supprimer ce document ?')) {
-          StorageService.deleteDocument(id);
+      setDeleteId(id);
+  };
+  
+  const confirmDelete = () => {
+      if (deleteId) {
+          StorageService.deleteDocument(deleteId);
           setDocs(StorageService.getDocuments());
+          setDeleteId(null);
       }
   };
 
-  const filtered = docs.filter(d => 
-      d.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      d.number?.toLowerCase().includes(searchTerm.toLowerCase())
-  ).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const filtered = docs.filter(d => {
+      const matchesSearch = d.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                            d.number?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStart = !startDate || d.date >= startDate;
+      const matchesEnd = !endDate || d.date <= endDate;
+      return matchesSearch && matchesStart && matchesEnd;
+  }).sort((a,b) => {
+      if (sortField === 'date') {
+          return sortOrder === 'desc' 
+            ? new Date(b.date).getTime() - new Date(a.date).getTime()
+            : new Date(a.date).getTime() - new Date(b.date).getTime();
+      } else {
+          return sortOrder === 'desc'
+            ? b.totalTTC - a.totalTTC
+            : a.totalTTC - b.totalTTC;
+      }
+  });
 
   return (
     <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-col gap-4">
             <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Tableau de bord</h2>
-            <div className="w-full sm:w-auto">
-                <input 
-                  type="text" 
-                  placeholder="Rechercher..." 
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
-                />
+            
+            {/* Filter Bar */}
+            <div className="flex flex-col sm:flex-row gap-4 bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                <div className="flex-1">
+                    <label className="block text-xs font-medium text-slate-500 mb-1">Recherche</label>
+                    <input 
+                      type="text" 
+                      placeholder="Client, Numéro..." 
+                      value={searchTerm}
+                      onChange={e => setSearchTerm(e.target.value)}
+                      className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+                <div>
+                     <label className="block text-xs font-medium text-slate-500 mb-1">Date début</label>
+                     <input 
+                        type="date" 
+                        value={startDate}
+                        onChange={e => setStartDate(e.target.value)}
+                        className="w-full sm:w-auto px-4 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+                <div>
+                     <label className="block text-xs font-medium text-slate-500 mb-1">Date fin</label>
+                     <input 
+                        type="date" 
+                        value={endDate}
+                        onChange={e => setEndDate(e.target.value)}
+                        className="w-full sm:w-auto px-4 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+                
+                <div className="flex items-end gap-2">
+                    <div className="flex-1 sm:w-32">
+                        <label className="block text-xs font-medium text-slate-500 mb-1">Trier par</label>
+                        <select 
+                            value={sortField}
+                            onChange={(e) => setSortField(e.target.value as 'date' | 'amount')}
+                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                        >
+                            <option value="date">Date</option>
+                            <option value="amount">Montant</option>
+                        </select>
+                    </div>
+                    <div>
+                         <button 
+                            onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                            className="p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600"
+                            title={sortOrder === 'asc' ? 'Croissant' : 'Décroissant'}
+                         >
+                            {sortOrder === 'asc' ? (
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" /></svg>
+                            ) : (
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" /></svg>
+                            )}
+                         </button>
+                    </div>
+                </div>
+
+                {(searchTerm || startDate || endDate) && (
+                    <div className="flex items-end">
+                        <button 
+                            onClick={() => { setSearchTerm(''); setStartDate(''); setEndDate(''); }}
+                            className="px-4 py-2 text-red-500 hover:text-red-700 text-sm font-medium"
+                        >
+                            Effacer
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
         
@@ -608,7 +694,7 @@ const Dashboard = () => {
                         <span className="font-bold text-slate-900 dark:text-white text-lg">{doc.totalTTC.toFixed(2)} {doc.currency}</span>
                         <div className="flex space-x-2">
                              <a href={`#/edit/${doc.id}`} className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">Ouvrir</a>
-                             <button onClick={(e) => handleDelete(doc.id, e)} className="text-red-500 hover:text-red-700 text-sm">Supprimer</button>
+                             <button onClick={(e) => requestDelete(doc.id, e)} className="text-red-500 hover:text-red-700 text-sm">Supprimer</button>
                         </div>
                     </div>
                 </div>
@@ -619,6 +705,32 @@ const Dashboard = () => {
                 </div>
             )}
         </div>
+        
+        {/* Confirmation Modal */}
+        {deleteId && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+               <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200">
+                  <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Confirmer la suppression</h3>
+                  <p className="text-slate-600 dark:text-slate-400 mb-6 text-sm">
+                     Êtes-vous sûr de vouloir supprimer ce document ? Cette action est irréversible.
+                  </p>
+                  <div className="flex justify-end gap-3">
+                     <button 
+                        onClick={() => setDeleteId(null)} 
+                        className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-sm font-medium"
+                     >
+                        Annuler
+                     </button>
+                     <button 
+                        onClick={confirmDelete} 
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-sm text-sm font-medium"
+                     >
+                        Supprimer
+                     </button>
+                  </div>
+               </div>
+            </div>
+        )}
     </div>
   );
 };
